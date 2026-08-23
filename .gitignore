@@ -1,0 +1,47 @@
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+cache/
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+*.egg-info/
+*.egg
+build/
+dist/
+*.manifest
+*.spec
+MANIFEST/
+
+# Generated logs
+logs/
+*.log
+
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
+~*
+
+# Trained model artifacts
+models/*.pkl
+models/*.joblib
+
+.env
+
+# Jupyter
+.ipynb_checkpoints/
