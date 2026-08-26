@@ -9,7 +9,6 @@ dashboard, and the CLI training/evaluation scripts.
 import os
 import pandas as pd
 import numpy as np
-from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
@@ -98,7 +97,10 @@ def load_data(train_path=None, test_path=None):
         (train_df, test_df)
     """
     # Defer to the data ingestion component (logging + error handling).
-    from components.data_ingestion import load_raw_data as _ingest
+    try:  # imported as part of the ``src`` package
+        from .components.data_ingestion import load_raw_data as _ingest
+    except ImportError:  # script-style run (python src/...)
+        from components.data_ingestion import load_raw_data as _ingest
 
     return _ingest(train_path=train_path, test_path=test_path)
 
