@@ -109,51 +109,71 @@ def load_data(train_path=None, test_path=None):
 # Cleaning
 # ---------------------------------------------------------------------------
 
-def clean_data(df):
+def clean_data(df, arrival_median=None):
     """
     Clean a single DataFrame (train or test) by:
       1. Dropping ID / index columns.
       2. Removing exact duplicate rows.
       3. Imputing missing values in ``Arrival Delay in Minutes`` with the
          median (robust to outliers; aligns with the business meaning that
-         many passengers have zero delay).
+          many passengers have zero delay).
       4. Ensuring consistent data types.
+    Keeps all ages (including children 7-9, 1894 rows ~1.8%) - they are valid passengers.
+    Does NOT remove outliers - logged only.
 
     Parameters
     ----------
     df : pd.DataFrame
         Raw dataframe.
+    arrival_median : float, optional
+        Median to use for Arrival Delay imputation. If None, computed from df.
+        Pass train median when cleaning test to avoid leakage.
 
     Returns
     -------
     pd.DataFrame
         Cleaned dataframe.
     """
+    import logging
+    logger = logging.getLogger(__name__)
     df = df.copy()
+    n0 = len(df)
 
     # 1. Drop identifier columns.
     cols_to_drop = [c for c in ID_COLUMNS if c in df.columns]
     df = df.drop(columns=cols_to_drop, errors="ignore")
+    logger.info("Dropped ID cols %s -> shape %s", cols_to_drop, df.shape)
 
     # 2. Remove exact duplicates.
+    before = len(df)
     df = df.drop_duplicates().reset_index(drop=True)
+    logger.info("Deduplicated: removed %d duplicates (%.3f%%)", before - len(df), (before-len(df))/max(before,1)*100)
 
     # 3. Impute missing values.
-    # Arrival Delay in Minutes: only column with missing values.
-    # Median is preferred over mean because delay distributions are heavily
-    # right-skewed (very long delays are possible).
     if "Arrival Delay in Minutes" in df.columns:
-        median_delay = df["Arrival Delay in Minutes"].median()
-        df["Arrival Delay in Minutes"] = df["Arrival Delay in Minutes"].fillna(
-            median_delay
-        )
+        miss_before = int(df["Arrival Delay in Minutes"].isnull().sum())
+        median_delay = arrival_median if arrival_median is not None else df["Arrival Delay in Minutes"].median()
+        df["Arrival Delay in Minutes"] = df["Arrival Delay in Minutes"].fillna(median_delay)
+        logger.info("Arrival Delay imputed: %d missing filled with median=%.1f (source=%s)", miss_before, median_delay, "train" if arrival_median is not None else "self")
 
-    # Ensure integer-type service and delay columns.
+    # Log age children kept
+    if "Age" in df.columns:
+        children = int((df["Age"] < 10).sum())
+        logger.info("Age check: %d children (Age<10, %.2f%%) retained as valid passengers", children, children/len(df)*100)
+    # Log outliers (not removed)
+    for c in ["Flight Distance","Departure Delay in Minutes","Arrival Delay in Minutes"]:
+        if c in df.columns:
+            q1,q3 = df[c].quantile([0.25,0.75]); iqr=q3-q1
+            out = int(((df[c] < q1-1.5*iqr) | (df[c] > q3+1.5*iqr)).sum())
+            logger.info("Outlier check %s: %d (%.2f%%) - retained", c, out, out/len(df)*100)
+
+    # 4. Ensure integer-type service and delay columns.
     int_cols = SERVICE_RATING_COLUMNS + NUMERICAL_COLUMNS + DELAY_COLUMNS + ["Age"]
     for col in int_cols:
         if col in df.columns:
             df[col] = df[col].round().astype(int)
 
+    logger.info("clean_data: %d -> %d rows, cols %s", n0, len(df), list(df.columns)[:5])
     return df
 
 
@@ -290,14 +310,16 @@ def preprocess_data(train_df, test_df=None):
         (X_train, y_train, X_test, y_test) — if *test_df* is provided.
         Otherwise (X_train, y_train).
     """
-    train_clean = clean_data(train_df)
+    # compute train median once and reuse for test to avoid leakage
+    train_median = train_df["Arrival Delay in Minutes"].median() if "Arrival Delay in Minutes" in train_df.columns else None
+    train_clean = clean_data(train_df, arrival_median=train_median)
     train_clean = encode_target(train_clean)
 
     y_train = train_clean[TARGET_COLUMN]
     X_train = train_clean.drop(columns=[TARGET_COLUMN])
 
     if test_df is not None:
-        test_clean = clean_data(test_df)
+        test_clean = clean_data(test_df, arrival_median=train_median)
         test_clean = encode_target(test_clean)
         y_test = test_clean[TARGET_COLUMN]
         X_test = test_clean.drop(columns=[TARGET_COLUMN])
