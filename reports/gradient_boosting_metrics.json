@@ -1,0 +1,40 @@
+{
+  "model": "Gradient Boosting",
+  "target_mapping": {
+    "0": "neutral or dissatisfied",
+    "1": "satisfied"
+  },
+  "positive_class": 1,
+  "positive_class_label": "satisfied",
+  "random_state": 42,
+  "validation_split": 0.2,
+  "stratified": true,
+  "hyperparameters": {
+    "n_estimators": 200,
+    "learning_rate": 0.1,
+    "max_depth": 5,
+    "min_samples_split": 20,
+    "min_samples_leaf": 10,
+    "max_features": "sqrt",
+    "subsample": 0.8,
+    "random_state": 42,
+    "note": "class_weight not supported by GradientBoostingClassifier; imbalance handled via subsample and sequential boosting"
+  },
+  "metrics": {
+    "accuracy": 0.9601,
+    "precision": 0.9662,
+    "recall": 0.9408,
+    "f1": 0.9534,
+    "roc_auc": 0.994,
+    "confusion_matrix": [
+      [
+        11480,
+        296
+      ],
+      [
+        533,
+        8472
+      ]
+    ]
+  }
+}
