@@ -1,0 +1,29 @@
+{
+  "model": "Logistic Regression",
+  "target_mapping": {
+    "0": "neutral or dissatisfied",
+    "1": "satisfied"
+  },
+  "positive_class": 1,
+  "positive_class_label": "satisfied",
+  "random_state": 42,
+  "validation_split": 0.2,
+  "stratified": true,
+  "metrics": {
+    "accuracy": 0.869,
+    "precision": 0.8396,
+    "recall": 0.8625,
+    "f1": 0.8509,
+    "roc_auc": 0.9281,
+    "confusion_matrix": [
+      [
+        10292,
+        1484
+      ],
+      [
+        1238,
+        7767
+      ]
+    ]
+  }
+}
